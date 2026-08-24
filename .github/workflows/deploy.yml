@@ -41,7 +41,7 @@ jobs:
       - name: Upload Angular build
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist/angular-app-CI-CD/browser
+          path: ./dist/test-angular-app/browser
 
       - name: Deploy to GitHub Pages
         id: deployment
