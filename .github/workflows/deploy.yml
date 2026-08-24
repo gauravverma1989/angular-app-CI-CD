@@ -33,7 +33,7 @@ jobs:
         run: npm ci
 
       - name: Build Angular application
-        run: npm run build
+        run: npm run build -- --base-href /angular-app-CI-CD/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -41,7 +41,7 @@ jobs:
       - name: Upload Angular build
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist/test-angular-app/browser
+          path: ./dist/angular-app-CI-CD/browser
 
       - name: Deploy to GitHub Pages
         id: deployment
