@@ -1,0 +1,257 @@
+<div class="dashboard-shell">
+  <header class="dashboard-header">
+    <div>
+      <div class="eyebrow">ADMINISTRATION</div>
+      <h1>Management Dashboard</h1>
+      <p>Manage profiles, roles and access from one place.</p>
+    </div>
+    <div class="header-stat">
+      <span class="stat-label">Total records</span>
+      <strong>{{ profiles.length + roles.length }}</strong>
+    </div>
+  </header>
+
+  <section class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-icon">P</div>
+      <div>
+        <span>Profiles</span>
+        <strong>{{ profiles.length }}</strong>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">R</div>
+      <div>
+        <span>Roles</span>
+        <strong>{{ roles.length }}</strong>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon active">✓</div>
+      <div>
+        <span>Active roles</span>
+        <strong>{{ roles.length ? (roles | activeRoleCount) : 0 }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="content-card">
+    <ul ngbNav #nav="ngbNav" [(activeId)]="activeTab" class="nav-pills dashboard-tabs">
+      <li [ngbNavItem]="'profiles'">
+        <button ngbNavLink>Profiles <span class="tab-count">{{ profiles.length }}</span></button>
+        <ng-template ngbNavContent>
+          <div class="toolbar">
+            <div>
+              <h2>Profiles</h2>
+              <p>View and manage application users.</p>
+            </div>
+            <div class="toolbar-actions">
+              <div class="search-box">
+                <span>⌕</span>
+                <input [(ngModel)]="profileSearch" placeholder="Search ID, name, email..." />
+              </div>
+              <button class="btn btn-primary" type="button" (click)="openCreateProfile()">+ Add Profile</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table dashboard-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Profile</th>
+                  <th>Designation</th>
+                  <th>Age</th>
+                  <th>Role</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let profile of filteredProfiles">
+                  <td><span class="id-badge">#{{ profile.id }}</span></td>
+                  <td>
+                    <div class="person-cell">
+                      <div class="avatar">{{ profile.name.charAt(0).toUpperCase() }}</div>
+                      <div>
+                        <strong>{{ profile.name }}</strong>
+                        <small>{{ profile.email }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ profile.designation }}</td>
+                  <td>{{ profile.age }}</td>
+                  <td>
+                    <span class="role-badge">{{ profile.role?.name || '—' }}</span>
+                  </td>
+                  <td class="text-end">
+                    <button class="icon-btn edit" title="Edit" (click)="openEditProfile(profile)">✎</button>
+                    <button class="icon-btn delete" title="Delete" (click)="confirmDeleteProfile(profile)">⌫</button>
+                  </td>
+                </tr>
+                <tr *ngIf="!loadingProfiles && !filteredProfiles.length">
+                  <td colspan="6">
+                    <div class="empty-state">
+                      <div class="empty-icon">⌕</div>
+                      <strong>No profiles found</strong>
+                      <span>Try another search or add a new profile.</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="loading-bar" *ngIf="loadingProfiles"></div>
+          </div>
+        </ng-template>
+      </li>
+
+      <li [ngbNavItem]="'roles'">
+        <button ngbNavLink>Roles <span class="tab-count">{{ roles.length }}</span></button>
+        <ng-template ngbNavContent>
+          <div class="toolbar">
+            <div>
+              <h2>Roles</h2>
+              <p>Control role definitions and active status.</p>
+            </div>
+            <div class="toolbar-actions">
+              <div class="search-box">
+                <span>⌕</span>
+                <input [(ngModel)]="roleSearch" placeholder="Search ID, role..." />
+              </div>
+              <button class="btn btn-primary" type="button" (click)="openCreateRole()">+ Add Role</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table dashboard-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Role</th>
+                  <th>Description</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let role of filteredRoles">
+                  <td><span class="id-badge">#{{ role.id }}</span></td>
+                  <td>
+                    <div class="role-name">
+                      <span class="role-dot"></span>
+                      <strong>{{ role.name }}</strong>
+                    </div>
+                  </td>
+                  <td>{{ role.description || 'No description' }}</td>
+                  <td>
+                    <span class="status-badge" [class.inactive]="!role.isActive">
+                      <span></span>{{ role.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <button class="icon-btn edit" title="Edit" (click)="openEditRole(role)">✎</button>
+                    <button class="icon-btn delete" title="Delete" (click)="confirmDeleteRole(role)">⌫</button>
+                  </td>
+                </tr>
+                <tr *ngIf="!loadingRoles && !filteredRoles.length">
+                  <td colspan="5">
+                    <div class="empty-state">
+                      <div class="empty-icon">R</div>
+                      <strong>No roles found</strong>
+                      <span>Try another search or add a role.</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="loading-bar" *ngIf="loadingRoles"></div>
+          </div>
+        </ng-template>
+      </li>
+    </ul>
+
+    <div [ngbNavOutlet]="nav"></div>
+  </section>
+</div>
+
+<ng-template #profileModal let-modal>
+  <div class="modal-header">
+    <div>
+      <div class="modal-eyebrow">{{ editingProfile ? 'UPDATE PROFILE' : 'NEW PROFILE' }}</div>
+      <h4 class="modal-title">{{ editingProfile ? 'Edit profile' : 'Add profile' }}</h4>
+    </div>
+    <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+  </div>
+  <form [formGroup]="profileForm" (ngSubmit)="saveProfile(modal)">
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Name</label>
+          <input class="form-control" formControlName="name" placeholder="John Doe" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input class="form-control" type="email" formControlName="email" placeholder="john@example.com" />
+        </div>
+        <div class="field">
+          <label>Age</label>
+          <input class="form-control" type="number" formControlName="age" />
+        </div>
+        <div class="field">
+          <label>Designation</label>
+          <input class="form-control" formControlName="designation" placeholder="Software Engineer" />
+        </div>
+        <div class="field">
+          <label>Role</label>
+          <select class="form-select" formControlName="role">
+            <option [ngValue]="0" disabled>Select role</option>
+            <option *ngFor="let role of roles" [ngValue]="role.id">{{ role.name }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancel</button>
+      <button class="btn btn-primary" type="submit" [disabled]="saving">
+        {{ saving ? 'Saving...' : (editingProfile ? 'Save Changes' : 'Create Profile') }}
+      </button>
+    </div>
+  </form>
+</ng-template>
+
+<ng-template #roleModal let-modal>
+  <div class="modal-header">
+    <div>
+      <div class="modal-eyebrow">{{ editingRole ? 'UPDATE ROLE' : 'NEW ROLE' }}</div>
+      <h4 class="modal-title">{{ editingRole ? 'Edit role' : 'Add role' }}</h4>
+    </div>
+    <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+  </div>
+  <form [formGroup]="roleForm" (ngSubmit)="saveRole(modal)">
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Role name</label>
+          <input class="form-control" formControlName="name" placeholder="ADMIN or USER" />
+          <small class="text-muted">The current backend model permits ADMIN and USER.</small>
+        </div>
+        <div class="field full">
+          <label>Description</label>
+          <textarea class="form-control" rows="4" formControlName="description" placeholder="Describe this role..."></textarea>
+        </div>
+        <div class="field full switch-row">
+          <div>
+            <strong>Active role</strong>
+            <small>Inactive roles cannot be assigned to new profiles.</small>
+          </div>
+          <input class="form-check-input" type="checkbox" formControlName="isActive" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancel</button>
+      <button class="btn btn-primary" type="submit" [disabled]="saving">
+        {{ saving ? 'Saving...' : (editingRole ? 'Save Changes' : 'Create Role') }}
+      </button>
+    </div>
+  </form>
+</ng-template>

@@ -1,59 +1,82 @@
-# TestAngularApp
+# Angular Profiles & Roles Dashboard
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.7.
+A ready-to-copy Angular 19 module-based dashboard for the Node.js API in the supplied backend project.
 
-## Development server
+## API base URL
+Default: `http://localhost:3000`
 
-To start a local development server, run:
+Change it in:
+`src/environments/environment.ts`
+
+## APIs used
+
+### Profiles
+- GET `/profile/users`
+- GET `/profile/users?roleId=2`
+- POST `/profile/createuser`
+- PUT `/profile/updateuser?id=10`
+
+> The supplied Node project does not currently expose a profile DELETE endpoint. The UI includes the Delete button and expects `DELETE /profile/deleteuser?id=<id>`. Add the small backend route/controller shown below.
+
+### Roles
+- GET `/role/list`
+- GET `/role/list?id=1`
+- POST `/role/create`
+- PUT `/role/update?id=1`
+- DELETE `/role/delete?id=1`
+
+## Required packages
+
+This project uses Angular 19 + ng-bootstrap.
 
 ```bash
+npm install
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+If copying these files into an existing Angular application, install:
 
 ```bash
-ng generate component component-name
+npm install @ng-bootstrap/ng-bootstrap bootstrap
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+and add Bootstrap CSS to `angular.json`.
 
-```bash
-ng generate --help
+## Backend profile delete
+
+Add to `modules/profile/profile.routes.js`:
+
+```js
+router.delete('/deleteuser', profileController.deleteUser);
 ```
 
-## Building
+Add to `modules/profile/profile.controller.js`:
 
-To build the project run:
+```js
+exports.deleteUser = async (req, res, next) => {
+    try {
+        const userId = Number(req.query.id);
 
-```bash
-ng build
+        if (!Number.isInteger(userId) || userId <= 0) {
+            return sendResponse(res, 400, 'User id is required', null);
+        }
+
+        const user = await Profile.findOne({ id: userId });
+
+        if (!user) {
+            return sendResponse(res, 404, 'User not found', null);
+        }
+
+        await Profile.deleteOne({ id: userId });
+
+        return sendResponse(
+            res,
+            200,
+            'User deleted successfully',
+            null
+        );
+    } catch (error) {
+        next(error);
+    }
+};
 ```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
