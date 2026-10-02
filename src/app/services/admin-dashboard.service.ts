@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ApiResponse, Profile, Role } from '../models/dashboard.models';
+import { ApiResponse, Profile, ProfileListResponse, Role } from '../models/dashboard.models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminDashboardService {
@@ -14,7 +14,9 @@ export class AdminDashboardService {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
-}): Observable<ApiResponse<Profile[]>> {
+  page?: number;
+  size?: number;
+}): Observable<ProfileListResponse> {
   let params = new HttpParams();
 
   if (options?.roleId !== undefined && options.roleId !== null) {
@@ -27,9 +29,11 @@ export class AdminDashboardService {
 
   params = params
     .set('sortBy', options?.sortBy ?? 'id')
-    .set('sortOrder', options?.sortOrder ?? 'asc');
+    .set('sortOrder', options?.sortOrder ?? 'asc')
+    .set('page', options?.page ?? 1)
+    .set('size', options?.size ?? 10);
 
-  return this.http.get<ApiResponse<Profile[]>>(
+  return this.http.get<ProfileListResponse>(
     `${this.baseUrl}/profile/users`,
     { params }
   );
@@ -41,8 +45,9 @@ export class AdminDashboardService {
     age: number;
     designation: string;
     role: number;
-  }): Observable<ApiResponse<Profile>> {
-    return this.http.post<ApiResponse<Profile>>(
+    password: string;
+  }): Observable<ApiResponse<Profile> & { emailVerificationSent?: boolean }> {
+    return this.http.post<ApiResponse<Profile> & { emailVerificationSent?: boolean }>(
       `${this.baseUrl}/profile/createuser`,
       payload
     );
@@ -56,9 +61,10 @@ export class AdminDashboardService {
       age: number;
       designation: string;
       role: number;
+      password: string;
     }>
-  ): Observable<ApiResponse<Profile>> {
-    return this.http.put<ApiResponse<Profile>>(
+  ): Observable<ApiResponse<Profile> & { emailVerificationSent?: boolean }> {
+    return this.http.put<ApiResponse<Profile> & { emailVerificationSent?: boolean }>(
       `${this.baseUrl}/profile/updateuser`,
       payload,
       { params: new HttpParams().set('id', id) }
@@ -69,6 +75,13 @@ export class AdminDashboardService {
     return this.http.delete<ApiResponse<null>>(
       `${this.baseUrl}/profile/deleteuser`,
       { params: new HttpParams().set('id', id) }
+    );
+  }
+
+  resendVerification(email: string): Observable<ApiResponse<null>> {
+    return this.http.post<ApiResponse<null>>(
+      `${this.baseUrl}/auth/resend-verification`,
+      { email }
     );
   }
 

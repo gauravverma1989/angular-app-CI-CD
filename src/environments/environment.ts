@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://node-js-vzju.onrender.com'
-  //apiBaseUrl: 'http://localhost:3000'
+  //apiBaseUrl: 'https://node-js-vzju.onrender.com'
+  apiBaseUrl: 'http://localhost:3000'
 };

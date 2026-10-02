@@ -7,6 +7,8 @@ import {
   Validators
 } from '@angular/forms';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 import { AdminDashboardService } from '../services/admin-dashboard.service';
 import { Profile, Role } from '../models/dashboard.models';
 import { ActiveRoleCountPipe } from '../pipes/active-role-count.pipe';
@@ -20,6 +22,8 @@ import { ActiveRoleCountPipe } from '../pipes/active-role-count.pipe';
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(AdminDashboardService);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly modal = inject(NgbModal);
 
@@ -33,6 +37,13 @@ export class DashboardComponent implements OnInit {
   loadingProfiles = false;
   loadingRoles = false;
   saving = false;
+  showProfilePassword = false;
+  resendingProfileId: number | null = null;
+  readonly profilePageSize = 10;
+  profilePage = 0;
+  profileTotal = 0;
+  profileHasMore = true;
+  private profileRequestId = 0;
 
   editingProfile: Profile | null = null;
   editingRole: Role | null = null;
@@ -51,7 +62,8 @@ export class DashboardComponent implements OnInit {
     email: ['', [Validators.required, Validators.email]],
     age: [18, [Validators.required, Validators.min(1), Validators.max(120)]],
     designation: ['', Validators.required],
-    role: [0, Validators.required]
+    role: [0, Validators.required],
+    password: ['', [Validators.required, Validators.minLength(12), Validators.maxLength(72)]]
   });
 
   roleForm = this.fb.nonNullable.group({
@@ -63,6 +75,11 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.loadProfiles();
     this.loadRoles();
+  }
+
+  logout(): void {
+    this.auth.clearSession();
+    void this.router.navigateByUrl('/login');
   }
 
   get filteredProfiles(): Profile[] {
@@ -93,25 +110,56 @@ export class DashboardComponent implements OnInit {
   return this.roleSortOrder === 'asc' ? '↑' : '↓';
 }
 
-  loadProfiles(): void {
-  this.loadingProfiles = true;
+  loadProfiles(reset = true): void {
+    if (!reset && (this.loadingProfiles || !this.profileHasMore)) return;
 
-  this.api.getProfiles({
-    roleId: this.profileRoleId ?? undefined,
-    search: this.profileSearch,
-    sortBy: this.profileSortBy,
-    sortOrder: this.profileSortOrder
-  }).subscribe({
-    next: response => {
-      this.profiles = response.data ?? [];
-      this.loadingProfiles = false;
-    },
-    error: error => {
-      this.loadingProfiles = false;
-      this.showError(error);
+    if (reset) {
+      this.profileRequestId++;
+      this.profiles = [];
+      this.profilePage = 0;
+      this.profileTotal = 0;
+      this.profileHasMore = true;
     }
-  });
-}
+
+    const requestId = this.profileRequestId;
+    const page = reset ? 1 : this.profilePage + 1;
+    this.loadingProfiles = true;
+
+    this.api.getProfiles({
+      roleId: this.profileRoleId ?? undefined,
+      search: this.profileSearch,
+      sortBy: this.profileSortBy,
+      sortOrder: this.profileSortOrder,
+      page,
+      size: this.profilePageSize
+    }).subscribe({
+      next: response => {
+        if (requestId !== this.profileRequestId) return;
+
+        const pageProfiles = response.data ?? [];
+        this.profiles = reset ? pageProfiles : [...this.profiles, ...pageProfiles];
+        this.profilePage = response.pagination.page;
+        this.profileTotal = response.pagination.total;
+        this.profileHasMore = response.pagination.page < response.pagination.totalPages;
+        this.loadingProfiles = false;
+      },
+      error: error => {
+        if (requestId !== this.profileRequestId) return;
+
+        this.loadingProfiles = false;
+        this.showError(error);
+      }
+    });
+  }
+
+  onProfilesScroll(event: Event): void {
+    const container = event.target as HTMLElement;
+    const remainingScroll = container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    if (remainingScroll < 120) {
+      this.loadProfiles(false);
+    }
+  }
 
   loadRoles(): void {
   this.loadingRoles = true;
@@ -166,24 +214,37 @@ onRoleSearchChange(): void {
 
   openCreateProfile(): void {
     this.editingProfile = null;
+    this.profileForm.controls.password.setValidators([
+      Validators.required,
+      Validators.minLength(12),
+      Validators.maxLength(72)
+    ]);
+    this.profileForm.controls.password.updateValueAndValidity();
     this.profileForm.reset({
       name: '',
       email: '',
       age: 18,
       designation: '',
-      role: this.roles[0]?.id ?? 0
+      role: this.roles[0]?.id ?? 0,
+      password: ''
     });
     this.modal.open(this.profileModal, { centered: true });
   }
 
   openEditProfile(profile: Profile): void {
     this.editingProfile = profile;
+    this.profileForm.controls.password.setValidators([
+      Validators.minLength(12),
+      Validators.maxLength(72)
+    ]);
+    this.profileForm.controls.password.updateValueAndValidity();
     this.profileForm.reset({
       name: profile.name,
       email: profile.email,
       age: profile.age,
       designation: profile.designation,
-      role: profile.role?.id ?? 0
+      role: profile.role?.id ?? 0,
+      password: ''
     });
     this.modal.open(this.profileModal, { centered: true });
   }
@@ -197,16 +258,28 @@ onRoleSearchChange(): void {
     this.saving = true;
     const payload = this.profileForm.getRawValue();
 
+    const { password, ...profilePayload } = payload;
     const request$ = this.editingProfile
-      ? this.api.updateProfile(this.editingProfile.id, payload)
-      : this.api.createProfile(payload);
+      ? this.api.updateProfile(
+          this.editingProfile.id,
+          password ? { ...profilePayload, password } : profilePayload
+        )
+      : this.api.createProfile({ ...profilePayload, password });
 
     request$.subscribe({
-      next: () => {
+      next: response => {
         modalRef.close();
         this.loadProfiles();
+        if (response.emailVerificationSent === false) {
+          alert('The profile was saved, but its verification email could not be sent. Use Resend in the profile list.');
+        } else if (response.emailVerificationSent === true) {
+          alert('A verification email was sent to the profile email address.');
+        }
       },
-      error: error => this.showError(error),
+      error: error => {
+        this.saving = false;
+        this.showError(error);
+      },
       complete: () => this.saving = false
     });
   }
@@ -217,6 +290,22 @@ onRoleSearchChange(): void {
     this.api.deleteProfile(profile.id).subscribe({
       next: () => this.loadProfiles(),
       error: error => this.showError(error)
+    });
+  }
+
+  resendProfileVerification(profile: Profile): void {
+    if (this.resendingProfileId !== null) return;
+
+    this.resendingProfileId = profile.id;
+    this.api.resendVerification(profile.email).subscribe({
+      next: response => {
+        this.resendingProfileId = null;
+        alert(response.message);
+      },
+      error: error => {
+        this.resendingProfileId = null;
+        this.showError(error);
+      }
     });
   }
 

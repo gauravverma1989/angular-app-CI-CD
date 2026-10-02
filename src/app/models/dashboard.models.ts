@@ -16,6 +16,7 @@ export interface Profile {
   age: number;
   designation: string;
   role: Role | null;
+  emailVerifiedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -25,4 +26,28 @@ export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
+}
+
+export interface PaginationMetadata {
+  page: number;
+  size: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ProfileListResponse extends ApiResponse<Profile[]> {
+  pagination: PaginationMetadata;
+}
+
+export interface AuthUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface LoginResponseData {
+  accessToken: string;
+  expiresIn: number;
+  user: AuthUser;
 }
