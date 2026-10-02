@@ -34,11 +34,17 @@ export class DashboardComponent implements OnInit {
   loadingRoles = false;
   saving = false;
 
-  profileSearch = '';
-  roleSearch = '';
-
   editingProfile: Profile | null = null;
   editingRole: Role | null = null;
+
+  profileSearch = '';
+  profileRoleId: number | null = null;
+  profileSortBy = 'id';
+  profileSortOrder: 'asc' | 'desc' = 'asc';
+
+  roleSearch = '';
+  roleSortBy = 'id';
+  roleSortOrder: 'asc' | 'desc' = 'asc';
 
   profileForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(100)]],
@@ -60,46 +66,103 @@ export class DashboardComponent implements OnInit {
   }
 
   get filteredProfiles(): Profile[] {
-    const query = this.profileSearch.trim().toLowerCase();
-    if (!query) return this.profiles;
-
-    return this.profiles.filter(p =>
-      String(p.id).includes(query) ||
-      p.name.toLowerCase().includes(query) ||
-      p.email.toLowerCase().includes(query) ||
-      p.designation.toLowerCase().includes(query) ||
-      (p.role?.name ?? '').toLowerCase().includes(query)
-    );
+    return this.profiles;
   }
 
   get filteredRoles(): Role[] {
-    const query = this.roleSearch.trim().toLowerCase();
-    if (!query) return this.roles;
+  return this.roles;
+}
 
-    return this.roles.filter(r =>
-      String(r.id).includes(query) ||
-      r.name.toLowerCase().includes(query) ||
-      (r.description ?? '').toLowerCase().includes(query)
-    );
+  sortRoles(column: string): void {
+  if (this.roleSortBy === column) {
+    this.roleSortOrder =
+      this.roleSortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    this.roleSortBy = column;
+    this.roleSortOrder = 'asc';
   }
+
+  this.loadRoles();
+}
+
+  getRoleSortIcon(column: string): string {
+  if (this.roleSortBy !== column) {
+    return '↕';
+  }
+
+  return this.roleSortOrder === 'asc' ? '↑' : '↓';
+}
 
   loadProfiles(): void {
-    this.loadingProfiles = true;
-    this.api.getProfiles().subscribe({
-      next: response => this.profiles = response.data ?? [],
-      error: error => this.showError(error),
-      complete: () => this.loadingProfiles = false
-    });
-  }
+  this.loadingProfiles = true;
+
+  this.api.getProfiles({
+    roleId: this.profileRoleId ?? undefined,
+    search: this.profileSearch,
+    sortBy: this.profileSortBy,
+    sortOrder: this.profileSortOrder
+  }).subscribe({
+    next: response => {
+      this.profiles = response.data ?? [];
+      this.loadingProfiles = false;
+    },
+    error: error => {
+      this.loadingProfiles = false;
+      this.showError(error);
+    }
+  });
+}
 
   loadRoles(): void {
-    this.loadingRoles = true;
-    this.api.getRoles().subscribe({
-      next: response => this.roles = response.data ?? [],
-      error: error => this.showError(error),
-      complete: () => this.loadingRoles = false
-    });
+  this.loadingRoles = true;
+
+  this.api.getRoles({
+    search: this.roleSearch,
+    sortBy: this.roleSortBy,
+    sortOrder: this.roleSortOrder
+  }).subscribe({
+    next: response => {
+      this.roles = response.data ?? [];
+      this.loadingRoles = false;
+    },
+    error: error => {
+      this.loadingRoles = false;
+      this.showError(error);
+    }
+  });
+}
+
+onRoleSearchChange(): void {
+  this.loadRoles();
+}
+
+  onProfileSearchChange(): void {
+    this.loadProfiles();
   }
+
+  onProfileRoleChange(): void {
+    this.loadProfiles();
+  }
+
+  sortProfiles(column: string): void {
+  if (this.profileSortBy === column) {
+    this.profileSortOrder =
+      this.profileSortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    this.profileSortBy = column;
+    this.profileSortOrder = 'asc';
+  }
+
+  this.loadProfiles();
+}
+
+  getProfileSortIcon(column: string): string {
+  if (this.profileSortBy !== column) {
+    return '↕';
+  }
+
+  return this.profileSortOrder === 'asc' ? '↑' : '↓';
+}
 
   openCreateProfile(): void {
     this.editingProfile = null;

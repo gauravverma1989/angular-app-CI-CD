@@ -9,16 +9,31 @@ export class AdminDashboardService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  getProfiles(roleId?: number): Observable<ApiResponse<Profile[]>> {
-    let params = new HttpParams();
-    if (roleId !== undefined && roleId !== null) {
-      params = params.set('roleId', roleId);
-    }
-    return this.http.get<ApiResponse<Profile[]>>(
-      `${this.baseUrl}/profile/users`,
-      { params }
-    );
+  getProfiles(options?: {
+  roleId?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}): Observable<ApiResponse<Profile[]>> {
+  let params = new HttpParams();
+
+  if (options?.roleId !== undefined && options.roleId !== null) {
+    params = params.set('roleId', options.roleId);
   }
+
+  if (options?.search?.trim()) {
+    params = params.set('search', options.search.trim());
+  }
+
+  params = params
+    .set('sortBy', options?.sortBy ?? 'id')
+    .set('sortOrder', options?.sortOrder ?? 'asc');
+
+  return this.http.get<ApiResponse<Profile[]>>(
+    `${this.baseUrl}/profile/users`,
+    { params }
+  );
+}
 
   createProfile(payload: {
     name: string;
@@ -58,23 +73,28 @@ export class AdminDashboardService {
   }
 
   getRoles(options?: {
-    id?: number;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-  }): Observable<ApiResponse<Role[]>> {
-    let params = new HttpParams()
-      .set('sortBy', options?.sortBy ?? 'id')
-      .set('sortOrder', options?.sortOrder ?? 'asc');
+  id?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}): Observable<ApiResponse<Role[]>> {
+  let params = new HttpParams()
+    .set('sortBy', options?.sortBy ?? 'id')
+    .set('sortOrder', options?.sortOrder ?? 'asc');
 
-    if (options?.id !== undefined && options.id !== null) {
-      params = params.set('id', options.id);
-    }
-
-    return this.http.get<ApiResponse<Role[]>>(
-      `${this.baseUrl}/role/list`,
-      { params }
-    );
+  if (options?.id !== undefined && options.id !== null) {
+    params = params.set('id', options.id);
   }
+
+  if (options?.search?.trim()) {
+    params = params.set('search', options.search.trim());
+  }
+
+  return this.http.get<ApiResponse<Role[]>>(
+    `${this.baseUrl}/role/list`,
+    { params }
+  );
+}
 
   createRole(payload: {
     name: string;

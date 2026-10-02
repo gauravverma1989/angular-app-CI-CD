@@ -48,9 +48,22 @@
             <div class="toolbar-actions">
               <div class="search-box">
                 <span>⌕</span>
-                <input [(ngModel)]="profileSearch" placeholder="Search ID, name, email..." />
+                <input [(ngModel)]="profileSearch" (ngModelChange)="onProfileSearchChange()"
+                  placeholder="Search name, email, designation" />
               </div>
-              <button class="btn btn-primary" type="button" (click)="openCreateProfile()">+ Add Profile</button>
+
+              <div class="search-box">
+                
+                <select [(ngModel)]="profileRoleId" (ngModelChange)="onProfileRoleChange()" class="form-select">
+                  <option [ngValue]="null">All Roles</option>
+                  <option [ngValue]="1">ADMIN</option>
+                  <option [ngValue]="2">USER</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary" type="button" (click)="openCreateProfile()">
+                + Add Profile
+              </button>
             </div>
           </div>
 
@@ -58,11 +71,41 @@
             <table class="table dashboard-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Profile</th>
-                  <th>Designation</th>
-                  <th>Age</th>
-                  <th>Role</th>
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortProfiles('id')">
+                      ID
+                      <span>{{ getProfileSortIcon('id') }}</span>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortProfiles('name')">
+                      Profile
+                      <span>{{ getProfileSortIcon('name') }}</span>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortProfiles('designation')">
+                      Designation
+                      <span>{{ getProfileSortIcon('designation') }}</span>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortProfiles('age')">
+                      Age
+                      <span>{{ getProfileSortIcon('age') }}</span>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortProfiles('role')">
+                      Role
+                      <span>{{ getProfileSortIcon('role') }}</span>
+                    </button>
+                  </th>
+
                   <th class="text-end">Actions</th>
                 </tr>
               </thead>
@@ -115,7 +158,8 @@
             <div class="toolbar-actions">
               <div class="search-box">
                 <span>⌕</span>
-                <input [(ngModel)]="roleSearch" placeholder="Search ID, role..." />
+                <input [(ngModel)]="roleSearch" (ngModelChange)="onRoleSearchChange()"
+                  placeholder="Search ID, role..." />
               </div>
               <button class="btn btn-primary" type="button" (click)="openCreateRole()">+ Add Role</button>
             </div>
@@ -125,10 +169,34 @@
             <table class="table dashboard-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Role</th>
-                  <th>Description</th>
-                  <th>Status</th>
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortRoles('id')">
+                      ID
+                      <span>{{ getRoleSortIcon('id') }}</span>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortRoles('name')">
+                      Role
+                      <span>{{ getRoleSortIcon('name') }}</span>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortRoles('description')">
+                      Description
+                      <span>{{ getRoleSortIcon('description') }}</span>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button class="sort-btn" type="button" (click)="sortRoles('isActive')">
+                      Status
+                      <span>{{ getRoleSortIcon('isActive') }}</span>
+                    </button>
+                  </th>
+
                   <th class="text-end">Actions</th>
                 </tr>
               </thead>
@@ -236,7 +304,8 @@
         </div>
         <div class="field full">
           <label>Description</label>
-          <textarea class="form-control" rows="4" formControlName="description" placeholder="Describe this role..."></textarea>
+          <textarea class="form-control" rows="4" formControlName="description"
+            placeholder="Describe this role..."></textarea>
         </div>
         <div class="field full switch-row">
           <div>
