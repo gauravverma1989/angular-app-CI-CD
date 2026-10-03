@@ -8,6 +8,24 @@ Default: `http://localhost:3000`
 Change it in:
 `src/environments/environment.ts`
 
+## GitHub Pages routing
+
+This app uses hash-based routing so GitHub Pages can serve Angular routes after a page refresh. The browser URL includes a `#`, for example:
+
+```text
+https://<username>.github.io/<repository>/#/login
+```
+
+The part after `#` is handled by Angular in the browser, so GitHub Pages does not try to find a physical `/login` file and return a 404. When deploying an updated build, keep the URL hash when sharing links to app pages.
+
+To publish the routing change, build and deploy the app again:
+
+```bash
+npm run build -- --configuration production
+```
+
+Deploy the generated files from `dist/angular-profile-role-dashboard/browser` to the GitHub Pages source configured for the repository.
+
 ## APIs used
 
 ### Profiles
